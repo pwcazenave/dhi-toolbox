@@ -1,6 +1,7 @@
 data/
 videos/
 images/
+obsolete/
 
 *.asv
 *.m~
