@@ -15,7 +15,7 @@ function nodes = elems2nodes(elems, tri, nvert)
 %    nodes = vertex-based field
 %
 % EXAMPLE USAGE
-%    nodes = smoothfield(elems, tri, 1000)
+%    nodes = elems2nodes(elems, tri, 1000)
 %
 % Author(s):
 %    Pierre Cazenave (University of Southampton) based on elems2nodes from
@@ -43,7 +43,7 @@ if ndims(elems) == 1
         count(n2) = count(n2) + 1;
         count(n3) = count(n3) + 1;
     end
-    nodes = nodes./count;
+    nodes = nodes ./ count;
 
 elseif ndims(elems) == 2
     nodes = zeros(nvert, size(elems, 2));
