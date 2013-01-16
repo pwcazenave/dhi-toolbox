@@ -1,7 +1,7 @@
 function nodes = elems2nodes(elems, tri, nvert)
 % Transfer a field from elements to vertices.
 %
-% fieldout = elems2nodes(elems, tri, nvert)
+% nodes = elems2nodes(elems, tri, nvert)
 %
 % DESCRIPTION:
 %    Transfer values in elems to the nodes in tri.
@@ -12,7 +12,7 @@ function nodes = elems2nodes(elems, tri, nvert)
 %    nvert = number of nodes in the converted values
 %
 % OUTPUT:
-%    fieldout = vertex-based field
+%    nodes = vertex-based field
 %
 % EXAMPLE USAGE
 %    nodes = smoothfield(elems, tri, 1000)
@@ -47,7 +47,7 @@ if ndims(elems) == 1
 
 elseif ndims(elems) == 2
     nodes = zeros(nvert, size(elems, 2));
-    
+
     for i=1:nelem
         n1 = tri(i, 1);
         n2 = tri(i, 2);
