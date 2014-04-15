@@ -1,11 +1,26 @@
-function [X,Y,Z]=dfsu2nc(filename)
+function dfsu2nc(filename, varargin)
 % DFSU2NC(FILENAME) converts a 2D DFSU into a NetCDF file.
-% 
+%
+% Optionally supply argument pair:
+%   'overwrite' - set to 'yes' to overwrite existing files
+%
 % Pierre Cazenave 2012/12/10 v1.0
+%                 2014/04/14 v1.1 - Add option to overwrite existing files.
 %
 
-if nargin~=1
+if nargin ~= 1 && nargin ~= 3
     error('Incorrect number of arguments specified. Please supply the complete path to a dfsu file.')
+end
+
+clobber = false;
+for aa = 2:2:nargin
+    arg = varargin{aa};
+    switch aa
+        case {'overwrite', 'Overwrite', 'OVERWRITE'}
+            if strcmpi(arg, 'yes') || strcmpi(arg, 'y')
+                clobber = true;
+            end
+    end
 end
 
 % Create output file name.
@@ -13,12 +28,18 @@ end
 fout = fullfile(fpath, [fname, '.nc']);
 clear fpath fname
 
+if exist(fout, 'file') == 2 && ~clobber
+    fprintf('\n')
+    warning('File %s exists. Not overwriting.', fout)
+    return
+end
+
 % Load the MATLAB interface for dfs files.
 NET.addAssembly('DHI.Generic.MikeZero.DFS');
 import DHI.Generic.MikeZero.DFS.*;
 
 % Open the file.
-dfsu=DfsFileFactory.DfsuFileOpen(filename);
+dfsu = DfsFileFactory.DfsuFileOpen(filename);
 
 % Extract the dimensions of the outputs in the DFSU file.
 dims.node = dfsu.NumberOfNodes;
@@ -49,7 +70,8 @@ time.Times = datestr(time.time, 'yyyy-mm-ddTHH:MM:SS.FFF');
 items=cell(dfsu.ItemInfo.Count,3);
 for i=0:dfsu.ItemInfo.Count - 1
    item = dfsu.ItemInfo.Item(i);
-   items{i+1,1} = char(item.Name);
+   % Strip out invalid characters.
+   items{i+1,1} = regexprep(regexprep(regexprep(regexprep(regexprep(char(item.Name), ':', '-'), '(', ''), ')', ''), '\.', ''), ',', '');
    items{i+1,2} = char(item.Quantity.Unit);
    items{i+1,3} = char(item.Quantity.UnitAbbreviation);
 end
