@@ -50,7 +50,7 @@ dfs0.close()
 % Reopen for the rest of the data.
 dfs0 = DfsFileFactory.DfsGenericOpen(filename);
 % Grab all the data. Since this is time series data, the first column is
-% the time (in units of?), the remaining columns are the time series. 
+% the time (in units of?), the remaining columns are the time series.
 dd = double(Dfs0Util.ReadDfs0DataDouble(dfs0));
 all_data = dd(:, 2:end);
 clear dd
@@ -61,7 +61,7 @@ for i = 0:dfs0.ItemInfo.Count - 1
    item = dfs0.ItemInfo.Item(i);
    items.name{i+1} = char(item.Name);
    items.unit{i+1} = char(item.Quantity.Unit);
-   items.abbreviation{i+1} = char(item.Quantity.UnitAbbreviation); 
+   items.abbreviation{i+1} = char(item.Quantity.UnitAbbreviation);
 end
 % Find the unique names for the metadata.
 vars.name = {};
@@ -70,8 +70,15 @@ vars.abbreviation = {};
 for i = 1:length(items.name)
     name = strsplit(items.name{i}, ': ');
     name = name(end);
-    % Replace whitespace for the netCDF names.
+    % Replace illegal characters for the netCDF variable.
     name = strrep(name{1}, ' ', '_');
+    name = strrep(name, ':', '-');
+    name = strrep(name, '(', '');
+    name = strrep(name, ')', '');
+    name = strrep(name, '\.', '');
+    name = strrep(name, ',', '');
+    % Remove repeated underscores.
+    name = regexprep(name, '([\s._])\1+', '_');
     if ~any(ismember(vars.name, name))
         fprintf('Found %s\n', name)
         current_index = length(vars.name) + 1;
