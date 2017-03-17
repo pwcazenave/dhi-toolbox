@@ -1,12 +1,23 @@
 % Convert the MIKE dfs0 files into netCDFs.
 
-base = 'C:\Users\IEUser\Nextcloud\Papers\roughness\results';
-files = fullfile(base, 'round_8_palaeo', 'rms_calibration', '*', '*.dfs0');
+clear
+close all
+clc
+warning on
 
+base = 'C:\Users\IEUser\Nextcloud\Papers\roughness\results';
 cd(base)
-filelist = glob(files);
+
+files{1} = fullfile(base, '*', '*', '*.dfs0');
+files{2} = fullfile(base, '*', '*', '*', '*.dfs0');
+
+filelist = sort([glob(files{1}); glob(files{2})]);
 for file = 1:length(filelist)
-    dfs02nc(filelist{file}, 'overwrite', 'yes');
+    try
+        dfs02nc(filelist{file}, 'overwrite', 'yes');
+    catch
+        warning('Failed to convert %s', filelist{file})
+    end
     % Spatial data coordinates. This is a pain as the dfs0 doesn't contain
     % location data! Use the corresponding .txt file from the model
     % configuration to add the spatial data.
@@ -48,7 +59,7 @@ for file = 1:length(filelist)
     netcdf.putAtt(nc, h_varid, 'standard_name', 'sea_floor_depth')
     netcdf.putAtt(nc, h_varid, 'long_name', 'Bathymetry')
     netcdf.putAtt(nc, h_varid, 'positive', 'up')
-    netcdf.putAtt(nc, h_varid, 'units', 'metres') % this might be wrong in some weird cases
+    netcdf.putAtt(nc, h_varid, 'units', 'metres')
     
     netcdf.endDef(nc);
 
