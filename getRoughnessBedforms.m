@@ -79,6 +79,9 @@ function varargout=getRoughness(formulation,bathyFile,grainFile,wavelengthFile,h
 %       allows widely spaced, semi-independent dunes to have more
 %       appropriate wavelengths based on their sensible height. This is
 %       controlled by the checkWavelength value (one or zero/on or off).
+%       v4.0 2017-04-05 Add support for reading in netCDF files if the MIKE
+%       .NET interface is not available (for example, if using MATLAB on
+%       Linux or macos).
 
 % Let's get it on...
 
@@ -96,72 +99,88 @@ end
 % Acceleration due to gravity ms^{-2}.
 g=9.81;
 
-% Set up MIKE MATLAB interface.
-NET.addAssembly('DHI.Generic.MikeZero.DFS');
-import DHI.Generic.MikeZero.DFS.*;
+try
+    % Set up MIKE MATLAB interface.
+    NET.addAssembly('DHI.Generic.MikeZero.DFS');
+    import DHI.Generic.MikeZero.DFS.*;
 
-% Read in the bathy dfsu file.
-dfsuBathy=DfsFileFactory.DfsuFileOpen(bathyFile);
-bathyItems={};
-for i=0:dfsuBathy.ItemInfo.Count-1
-   item=dfsuBathy.ItemInfo.Item(i);
-   bathyItems{i+1,1}=char(item.Name);
-   bathyItems{i+1,2}=char(item.Quantity.Unit);
-   bathyItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
+    % Read in the bathy dfsu file.
+    dfsuBathy=DfsFileFactory.DfsuFileOpen(bathyFile);
+    bathyItems={};
+    for i=0:dfsuBathy.ItemInfo.Count-1
+       item=dfsuBathy.ItemInfo.Item(i);
+       bathyItems{i+1,1}=char(item.Name);
+       bathyItems{i+1,2}=char(item.Quantity.Unit);
+       bathyItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
+    end
+    bathyNum=find(strcmpi('Bathymetry',bathyItems));
+    zBathy=double(dfsuBathy.ReadItemTimeStep(bathyNum,0).Data);
+    zBathy=abs(zBathy); % Positive depths only, please.
+catch
+    % Fall back to netCDF.
+    zBathy = abs(double(ncread(bathyFile, 'Bathymetry')));
 end
-bathyNum=find(strcmpi('Bathymetry',bathyItems));
-zBathy=double(dfsuBathy.ReadItemTimeStep(bathyNum,0).Data);
-zBathy=abs(zBathy); % Positive depths only, please.
 
 if both
     % Read in the bedform wavelength data.
-    dfsuBedformWavelength=DfsFileFactory.DfsuFileOpen(wavelengthFile);
-    bedformWavelengthItems={};
-    for i=0:dfsuBedformWavelength.ItemInfo.Count-1
-       item=dfsuBedformWavelength.ItemInfo.Item(i);
-       bedformWavelengthItems{i+1,1}=char(item.Name);
-       bedformWavelengthItems{i+1,2}=char(item.Quantity.Unit);
-       bedformWavelengthItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
-    end
-    bedformWavelengthNum=find(strcmpi('Wavelength',bedformWavelengthItems));
-    zBedformWavelength=double(dfsuBedformWavelength.ReadItemTimeStep(bedformWavelengthNum,0).Data);
+    try
+        % dfsu
+        dfsuBedformWavelength=DfsFileFactory.DfsuFileOpen(wavelengthFile);
+        bedformWavelengthItems={};
+        for i=0:dfsuBedformWavelength.ItemInfo.Count-1
+           item=dfsuBedformWavelength.ItemInfo.Item(i);
+           bedformWavelengthItems{i+1,1}=char(item.Name);
+           bedformWavelengthItems{i+1,2}=char(item.Quantity.Unit);
+           bedformWavelengthItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
+        end
+        bedformWavelengthNum=find(strcmpi('Wavelength',bedformWavelengthItems));
+        zBedformWavelength=double(dfsuBedformWavelength.ReadItemTimeStep(bedformWavelengthNum,0).Data);
 
-    % Read in the bedform height data.
-    dfsuBedformHeight=DfsFileFactory.DfsuFileOpen(heightFile);
-    bedformHeightItems={};
-    for i=0:dfsuBedformHeight.ItemInfo.Count-1
-       item=dfsuBedformHeight.ItemInfo.Item(i);
-       bedformHeightItems{i+1,1}=char(item.Name);
-       bedformHeightItems{i+1,2}=char(item.Quantity.Unit);
-       bedformHeightItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
-    end
-    bedformHeightNum=find(strcmpi('Height',bedformHeightItems));
-    zBedformHeight=double(dfsuBedformHeight.ReadItemTimeStep(bedformHeightNum,0).Data);
+        % Read in the bedform height data.
+        dfsuBedformHeight=DfsFileFactory.DfsuFileOpen(heightFile);
+        bedformHeightItems={};
+        for i=0:dfsuBedformHeight.ItemInfo.Count-1
+           item=dfsuBedformHeight.ItemInfo.Item(i);
+           bedformHeightItems{i+1,1}=char(item.Name);
+           bedformHeightItems{i+1,2}=char(item.Quantity.Unit);
+           bedformHeightItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
+        end
+        bedformHeightNum=find(strcmpi('Height',bedformHeightItems));
+        zBedformHeight=double(dfsuBedformHeight.ReadItemTimeStep(bedformHeightNum,0).Data);
 
-    % Close the opened dfsu files.
-    dfsuBedformHeight.Close();
-    dfsuBedformWavelength.Close();
+        % Close the opened dfsu files.
+        dfsuBedformHeight.Close();
+        dfsuBedformWavelength.Close();
+    catch
+        % netCDF
+        zBedformWavelength = double(ncread(wavelengthFile, 'Wavelength'));
+        zBedformHeight = double(ncread(heightFile, 'Height'));
+    end
 end
 
 % Work on the grain size data, which will always be given.
 % WARNING: grain size data is almost certainly in mm - make sure you
 % convert it to metres for the calculations.
 warning('Check input grain size is in millimetres: I''m converting to metres here.') %#ok<WNTAG>
-dfsuGrain=DfsFileFactory.DfsuFileOpen(grainFile);
-grainItems={};
-for i=0:dfsuGrain.ItemInfo.Count-1
-   item=dfsuGrain.ItemInfo.Item(i);
-   grainItems{i+1,1}=char(item.Name);
-   grainItems{i+1,2}=char(item.Quantity.Unit);
-   grainItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
-end
-grainNum=find(strcmpi('Sediments',grainItems));
-zGrain=double(dfsuGrain.ReadItemTimeStep(grainNum,0).Data);
-zGrain=zGrain/1000; % Convert grain size to metres.
+try
+    dfsuGrain=DfsFileFactory.DfsuFileOpen(grainFile);
+    grainItems={};
+    for i=0:dfsuGrain.ItemInfo.Count-1
+       item=dfsuGrain.ItemInfo.Item(i);
+       grainItems{i+1,1}=char(item.Name);
+       grainItems{i+1,2}=char(item.Quantity.Unit);
+       grainItems{i+1,3}=char(item.Quantity.UnitAbbreviation);
+    end
+    grainNum=find(strcmpi('Sediments',grainItems));
+    zGrain=double(dfsuGrain.ReadItemTimeStep(grainNum,0).Data);
+    zGrain=zGrain/1000; % Convert grain size to metres.
 
-% Close the opened dfsu files.
-dfsuBathy.Close();
-dfsuGrain.Close();
+    % Close the opened dfsu files.
+    dfsuBathy.Close();
+    dfsuGrain.Close();
+catch
+    zGrain = double(ncread(grainFile, 'Sediments')) / 1000;
+end
 
 % Let's convert this grain size into a measurement of roughness
 z0s=zGrain./12; % in m
