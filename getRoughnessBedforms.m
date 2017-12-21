@@ -252,5 +252,9 @@ else
     M=sqrt(g./Cd)./zBathy.^(1/6); % in m^{1/3}s^{-1}
 end
 
-outputs = {M, Cd', altM', ks_grain'};
+% Go from Manning's to z0 so we have all the components (bedform, depth,
+% grain size) in a format compatible with FVCOM, if needed.
+z0 = (g .* Cd) .* (1/6).^(1 ./ zBathy);
+
+outputs = {M, Cd', altM', ks_grain', z0};
 varargout = outputs(1:nargout);
