@@ -85,10 +85,10 @@ function varargout=getRoughness(formulation,bathyFile,grainFile,wavelengthFile,h
 
 % Let's get it on...
 
-if nargin==3;
+if nargin==3
     % Grain size only.
     both=0;
-elseif nargin==5;
+elseif nargin==5
     % We've got both grain size and wavelength and height data, and we'll
     % use both.
     both=1;
@@ -226,8 +226,8 @@ Cd=a*(z0s./zBathy).^B; % dimensionless
 % Do the final calculations.
 if both
     ks_bedform=nan(size(zBedformHeight,2),1); % in m
-    M=nan(size(zBedformHeight,2),1);
-    for i=1:size(zBedformHeight,2)
+    M=nan(length(zBedformHeight), 1);
+    for i=1:length(zBedformHeight)
         % We've set the NaN value in the dfsu files as -10, so we need to skip
         % anything with a value of < 0. Need both wavelength and height to be
         % greater than zero because the interpolation of the wavelength can
