@@ -3,7 +3,7 @@ function varargout=getRoughness(formulation,bathyFile,grainFile,wavelengthFile,h
 %   [M]=GETROUGHNESS(FORMULATION,BATHY,GRAINSIZE) takes water depth
 %   (BATHY) and combines it with grain size data (GRAINSIZE) to calculate
 %   the Manning's number across the domain. FORMULATION determines values
-% 	of the constants for the drag coefficients.
+%   of the constants for the drag coefficients.
 %
 %   'ms' - Manning-Strickler
 %   'dawson' - Dawson et al. (1984)
