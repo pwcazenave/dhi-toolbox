@@ -82,6 +82,7 @@ function varargout=getRoughness(formulation,bathyFile,grainFile,wavelengthFile,h
 %       v4.0 2017-04-05 Add support for reading in netCDF files if the MIKE
 %       .NET interface is not available (for example, if using MATLAB on
 %       Linux or macos).
+%       2017-12-21 Add the grain size roughness length as an output too.
 
 % Let's get it on...
 
@@ -256,5 +257,5 @@ end
 % grain size) in a format compatible with FVCOM, if needed.
 z0 = (g .* Cd) .* (1/6).^(1 ./ zBathy);
 
-outputs = {M, Cd', altM', ks_grain', z0};
+outputs = {M, Cd', altM', ks_grain', z0, z0s};
 varargout = outputs(1:nargout);
